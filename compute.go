@@ -3,6 +3,7 @@ package main
 import "C"
 
 import (
+	"fmt"
 	"math"
 	"unsafe"
 
@@ -36,7 +37,7 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 	// Get Buffer
 	dat := []float32{1, 2, 3}
 	inp := getBuffer(physicalDevice, device, dat)
-	out := allocBuffer(int(unsafe.Sizeof(dat[0]))*len(dat), device, physicalDevice)
+	out, outMem := allocBuffer(int(unsafe.Sizeof(dat[0]))*len(dat), device, physicalDevice)
 	uniform := createUniformData(physicalDevice, device, len(dat))
 
 	// Create Shader
@@ -220,4 +221,15 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 
 	err = vk.Error(vk.QueueWaitIdle(queue))
 	handle(err)
+
+	// Read Data Back
+	var data unsafe.Pointer
+	err = vk.Error(vk.MapMemory(device, outMem, 0, vk.DeviceSize(vk.WholeSize), 0, &data))
+	handle(err)
+
+	outData := unsafe.Slice((*float32)(data), len(dat))
+
+	vk.UnmapMemory(device, outMem)
+
+	fmt.Println(outData)
 }

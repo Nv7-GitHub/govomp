@@ -97,14 +97,14 @@ func allocMemory(size int, props vk.PhysicalDeviceMemoryProperties, device vk.De
 	return memory
 }
 
-func allocBuffer(size int, device vk.Device, physicalDevice vk.PhysicalDevice) vk.Buffer {
+func allocBuffer(size int, device vk.Device, physicalDevice vk.PhysicalDevice) (vk.Buffer, vk.DeviceMemory) {
 	var properties vk.PhysicalDeviceMemoryProperties
 	vk.GetPhysicalDeviceMemoryProperties(physicalDevice, &properties)
 	properties.Deref()
 
 	mem := allocMemory(size, properties, device)
 	buf := createBuffer(mem, device, size)
-	return buf
+	return buf, mem
 }
 
 func createUniformData(physicalDevice vk.PhysicalDevice, device vk.Device, size int) vk.Buffer {
