@@ -1,5 +1,7 @@
 package main
 
+import "C"
+
 import (
 	"math"
 	"unsafe"
@@ -31,13 +33,11 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 	err := vk.Error(vk.CreateDevice(physicalDevice, &deviceCreateInfo, nil, &device))
 	handle(err)
 
-	var queue vk.Queue
-	vk.GetDeviceQueue(device, 0, 0, &queue)
-
 	// Get Buffer
 	dat := []float32{1, 2, 3}
 	inp := getBuffer(physicalDevice, device, dat)
 	out := allocBuffer(int(unsafe.Sizeof(dat[0]))*len(dat), device, physicalDevice)
+	uniform := createUniformData(physicalDevice, device, len(dat))
 
 	// Create Shader
 	shader := createShader(shader, device)
@@ -53,6 +53,12 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 		{
 			Binding:         2,
 			DescriptorType:  vk.DescriptorTypeStorageBuffer,
+			DescriptorCount: 1,
+			StageFlags:      vk.ShaderStageFlags(vk.ShaderStageComputeBit),
+		},
+		{
+			Binding:         0,
+			DescriptorType:  vk.DescriptorTypeUniformBuffer,
 			DescriptorCount: 1,
 			StageFlags:      vk.ShaderStageFlags(vk.ShaderStageComputeBit),
 		},
@@ -130,6 +136,10 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 		Buffer: out,
 		Range:  vk.DeviceSize(vk.WholeSize),
 	}
+	uniformBufferInfo := vk.DescriptorBufferInfo{
+		Buffer: uniform,
+		Range:  vk.DeviceSize(vk.WholeSize),
+	}
 	writeDescriptorSet := []vk.WriteDescriptorSet{
 		{
 			SType:           vk.StructureTypeWriteDescriptorSet,
@@ -146,6 +156,14 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 			DescriptorCount: 1,
 			DescriptorType:  vk.DescriptorTypeStorageBuffer,
 			PBufferInfo:     []vk.DescriptorBufferInfo{outBufferInfo},
+		},
+		{
+			SType:           vk.StructureTypeWriteDescriptorSet,
+			DstSet:          vk.DescriptorSet(descriptorSet),
+			DstBinding:      0,
+			DescriptorCount: 1,
+			DescriptorType:  vk.DescriptorTypeStorageBuffer,
+			PBufferInfo:     []vk.DescriptorBufferInfo{uniformBufferInfo},
 		},
 	}
 	vk.UpdateDescriptorSets(device, uint32(len(writeDescriptorSet)), writeDescriptorSet, 0, nil)
@@ -186,5 +204,20 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 	err = vk.Error(vk.EndCommandBuffer(commandBuffers[0]))
 	handle(err)
 
-	// Create Device Queue
+	// Get Device Queue
+	var queue vk.Queue
+	vk.GetDeviceQueue(device, 0, 0, &queue)
+
+	// Submit Queue & Wait
+	submitInfo := vk.SubmitInfo{
+		SType:              vk.StructureTypeSubmitInfo,
+		CommandBufferCount: 1,
+		PCommandBuffers:    commandBuffers,
+	}
+
+	err = vk.Error(vk.QueueSubmit(queue, 1, []vk.SubmitInfo{submitInfo}, vk.NullFence))
+	handle(err)
+
+	err = vk.Error(vk.QueueWaitIdle(queue))
+	handle(err)
 }

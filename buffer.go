@@ -1,5 +1,20 @@
 package main
 
+/*
+typedef struct UniformData {
+	int totalCount;
+} UniformData;
+
+void* getPtr(UniformData* value) {
+	return (void*)value;
+}
+
+size_t getSize(UniformData value) {
+	return sizeof(value);
+}
+*/
+import "C"
+
 import (
 	"unsafe"
 
@@ -90,4 +105,33 @@ func allocBuffer(size int, device vk.Device, physicalDevice vk.PhysicalDevice) v
 	mem := allocMemory(size, properties, device)
 	buf := createBuffer(mem, device, size)
 	return buf
+}
+
+func createUniformData(physicalDevice vk.PhysicalDevice, device vk.Device, size int) vk.Buffer {
+	data := C.UniformData{totalCount: (C.int)(size)}
+	bufSize := C.getSize(data)
+
+	var properties vk.PhysicalDeviceMemoryProperties
+	vk.GetPhysicalDeviceMemoryProperties(physicalDevice, &properties)
+	properties.Deref()
+
+	// Alloc
+	mem := allocMemory(int(bufSize), properties, device)
+
+	// Map and transfer
+	var payload unsafe.Pointer
+	err := vk.Error(vk.MapMemory(device, mem, 0, vk.DeviceSize(bufSize), 0, &payload))
+	handle(err)
+
+	ptr := C.getPtr(&data)
+	byteArray := unsafe.Slice((*byte)(ptr), int(bufSize))
+	n := vk.Memcopy(payload, byteArray)
+	if n != len(byteArray) {
+		panic("govomp: failed to copy memory")
+	}
+
+	vk.UnmapMemory(device, mem)
+
+	// Create buffer
+	return createBuffer(mem, device, int(bufSize))
 }

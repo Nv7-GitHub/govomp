@@ -20,7 +20,8 @@ void main()
 	uint gID = gl_GlobalInvocationID.x;
     //make sure we don't access past the buffer size
     if(gID < opData.totalCount)
-    {
-        outputData.data[gID] = inputData.data[gID] * inputData.data[gID];
+    {   
+        float a = inputData.data[gID] * inputData.data[gID];
+        outputData.data[gID] = a;
     }
 }
