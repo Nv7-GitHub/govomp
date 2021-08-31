@@ -19,8 +19,6 @@ void main()
 	uint gID = gl_GlobalInvocationID.x;
     if(gID < configData.data[0])
     {   
-        float a = inputData.data[gID] * inputData.data[gID];
-        //outputData.data[gID] = a;
-        outputData.data[gID] = configData.data[0];
+        outputData.data[gID] = inputData.data[gID] * inputData.data[gID];
     }
 }

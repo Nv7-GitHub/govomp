@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
+
 	vk "github.com/vulkan-go/vulkan"
 )
 
@@ -16,7 +19,15 @@ func handle(err error) {
 	}
 }
 
+const length = 16384
+
 func main() {
+	inpdata := make([]float32, length)
+	for i := range inpdata {
+		inpdata[i] = rand.Float32()
+	}
+	fmt.Println("generated data")
+
 	// Get Instance
 	err := vk.SetDefaultGetInstanceProcAddr()
 	handle(err)
@@ -44,6 +55,6 @@ func main() {
 	handle(err)
 
 	for _, device := range devices {
-		runCompute(device, instance)
+		runCompute(device, instance, inpdata)
 	}
 }

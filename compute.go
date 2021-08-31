@@ -10,7 +10,7 @@ import (
 	vk "github.com/vulkan-go/vulkan"
 )
 
-func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
+func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []float32) {
 	// Get queue family
 	var queueFamilyPropertyCount uint32
 	vk.GetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nil)
@@ -35,7 +35,6 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 	handle(err)
 
 	// Get Buffer
-	dat := []float32{1, 2, 3}
 	inp := getBuffer(physicalDevice, device, dat)
 	out, outMem := allocBuffer(int(unsafe.Sizeof(dat[0]))*len(dat), device, physicalDevice)
 	uniform := getBufferInts(physicalDevice, device, []int32{int32(len(dat))})
