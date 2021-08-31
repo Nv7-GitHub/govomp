@@ -88,7 +88,9 @@ func GetDevices() ([]*Device, error) {
 
 	out := make([]*Device, len(devices))
 	for i, physicalDevice := range devices {
-		out[i].physicalDevice = physicalDevice
+		out[i] = &Device{
+			physicalDevice: physicalDevice,
+		}
 		err = out[i].init()
 		if err != nil {
 			return nil, err

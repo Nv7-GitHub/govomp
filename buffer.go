@@ -6,7 +6,7 @@ import (
 	vk "github.com/vulkan-go/vulkan"
 )
 
-type Buffer struct {
+type ArrayBuffer struct {
 	mem    *Memory
 	buf    vk.Buffer
 	device vk.Device
@@ -93,7 +93,7 @@ func (m *Memory) WriteArray(data []float32) error {
 
 // TODO: Use generics for the data, and support float32 and int32 arrays [waiting for go 1.18 release]
 // NewBuffer creates a buffer on the target device with the provided data
-func (d *Device) NewBufferArray(data []float32) (*Buffer, error) {
+func (d *Device) NewArrayBuffer(data []float32) (*ArrayBuffer, error) {
 	bufSize := len(data) * int(unsafe.Sizeof(data[0]))
 
 	mem, err := d.AllocMemory(bufSize)
@@ -111,9 +111,32 @@ func (d *Device) NewBufferArray(data []float32) (*Buffer, error) {
 		return nil, err
 	}
 
-	return &Buffer{
+	return &ArrayBuffer{
 		mem:    mem,
 		device: d.device,
 		buf:    buf,
 	}, nil
+}
+
+// TODO: Have this be a generic so that it can return data based on type passed (don't have struct be generic)
+// ReadArray reads an array from the memory
+func (m *Memory) ReadArray() ([]float32, error) {
+	var data unsafe.Pointer
+	err := vk.Error(vk.MapMemory(m.device, m.Memory, 0, vk.DeviceSize(vk.WholeSize), 0, &data))
+	if err != nil {
+		return nil, err
+	}
+
+	var sizeTest float32
+	outData := unsafe.Slice((*float32)(data), m.Size/int(unsafe.Sizeof(sizeTest)))
+
+	vk.UnmapMemory(m.device, m.Memory)
+
+	return outData, nil
+}
+
+// TODO: Have the struct be a generic so that it can return the same data as passed
+// Read reads the data from the buffer
+func (b *ArrayBuffer) Read() ([]float32, error) {
+	return b.mem.ReadArray()
 }
