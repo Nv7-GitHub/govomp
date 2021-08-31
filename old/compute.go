@@ -11,13 +11,6 @@ import (
 )
 
 func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []float32) {
-	// Get queue family
-	var queueFamilyPropertyCount uint32
-	vk.GetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nil)
-
-	queueFamilyProperties := make([]vk.QueueFamilyProperties, queueFamilyPropertyCount)
-	vk.GetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties)
-
 	// Create Device Queue
 	queueCreateInfo := vk.DeviceQueueCreateInfo{
 		SType:            vk.StructureTypeDeviceQueueCreateInfo,
