@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	vk "github.com/vulkan-go/vulkan"
 )
 
@@ -36,9 +34,16 @@ func main() {
 	err = vk.InitInstance(instance)
 	handle(err)
 
-	// Get Physical Device
+	// Get Devices
 	var deviceCount uint32
 	err = vk.Error(vk.EnumeratePhysicalDevices(instance, &deviceCount, nil))
 	handle(err)
-	fmt.Println(deviceCount)
+
+	devices := make([]vk.PhysicalDevice, deviceCount)
+	err = vk.Error(vk.EnumeratePhysicalDevices(instance, &deviceCount, devices))
+	handle(err)
+
+	for _, device := range devices {
+		runCompute(device, instance)
+	}
 }
