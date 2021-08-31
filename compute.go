@@ -38,13 +38,19 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 	dat := []float32{1, 2, 3}
 	inp := getBuffer(physicalDevice, device, dat)
 	out, outMem := allocBuffer(int(unsafe.Sizeof(dat[0]))*len(dat), device, physicalDevice)
-	uniform := createUniformData(physicalDevice, device, len(dat))
+	uniform := getBufferInts(physicalDevice, device, []int32{int32(len(dat))})
 
 	// Create Shader
 	shader := createShader(shader, device)
 
 	// Create Bindings
 	bindings := []vk.DescriptorSetLayoutBinding{
+		{
+			Binding:         0,
+			DescriptorType:  vk.DescriptorTypeStorageBuffer,
+			DescriptorCount: 1,
+			StageFlags:      vk.ShaderStageFlags(vk.ShaderStageComputeBit),
+		},
 		{
 			Binding:         1,
 			DescriptorType:  vk.DescriptorTypeStorageBuffer,
@@ -54,12 +60,6 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 		{
 			Binding:         2,
 			DescriptorType:  vk.DescriptorTypeStorageBuffer,
-			DescriptorCount: 1,
-			StageFlags:      vk.ShaderStageFlags(vk.ShaderStageComputeBit),
-		},
-		{
-			Binding:         0,
-			DescriptorType:  vk.DescriptorTypeUniformBuffer,
 			DescriptorCount: 1,
 			StageFlags:      vk.ShaderStageFlags(vk.ShaderStageComputeBit),
 		},
@@ -145,6 +145,14 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 		{
 			SType:           vk.StructureTypeWriteDescriptorSet,
 			DstSet:          vk.DescriptorSet(descriptorSet),
+			DstBinding:      0,
+			DescriptorCount: 1,
+			DescriptorType:  vk.DescriptorTypeStorageBuffer,
+			PBufferInfo:     []vk.DescriptorBufferInfo{uniformBufferInfo},
+		},
+		{
+			SType:           vk.StructureTypeWriteDescriptorSet,
+			DstSet:          vk.DescriptorSet(descriptorSet),
 			DstBinding:      1,
 			DescriptorCount: 1,
 			DescriptorType:  vk.DescriptorTypeStorageBuffer,
@@ -157,14 +165,6 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance) {
 			DescriptorCount: 1,
 			DescriptorType:  vk.DescriptorTypeStorageBuffer,
 			PBufferInfo:     []vk.DescriptorBufferInfo{outBufferInfo},
-		},
-		{
-			SType:           vk.StructureTypeWriteDescriptorSet,
-			DstSet:          vk.DescriptorSet(descriptorSet),
-			DstBinding:      0,
-			DescriptorCount: 1,
-			DescriptorType:  vk.DescriptorTypeStorageBuffer,
-			PBufferInfo:     []vk.DescriptorBufferInfo{uniformBufferInfo},
 		},
 	}
 	vk.UpdateDescriptorSets(device, uint32(len(writeDescriptorSet)), writeDescriptorSet, 0, nil)
