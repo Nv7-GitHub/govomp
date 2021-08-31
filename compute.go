@@ -34,10 +34,13 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []fl
 	err := vk.Error(vk.CreateDevice(physicalDevice, &deviceCreateInfo, nil, &device))
 	handle(err)
 
+	end("Got device")
+
 	// Get Buffer
 	inp := getBuffer(physicalDevice, device, dat)
 	out, outMem := allocBuffer(int(unsafe.Sizeof(dat[0]))*len(dat), device, physicalDevice)
 	uniform := getBufferInts(physicalDevice, device, []int32{int32(len(dat))})
+	end("Copied buffers")
 
 	// Create Shader
 	shader := createShader(shader, device)
@@ -167,6 +170,7 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []fl
 		},
 	}
 	vk.UpdateDescriptorSets(device, uint32(len(writeDescriptorSet)), writeDescriptorSet, 0, nil)
+	end("Updated descriptor sets")
 
 	// Create Command Pool
 	commandPoolCreateInfo := vk.CommandPoolCreateInfo{
@@ -204,6 +208,8 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []fl
 	err = vk.Error(vk.EndCommandBuffer(commandBuffers[0]))
 	handle(err)
 
+	end("Created command buffer")
+
 	// Get Device Queue
 	var queue vk.Queue
 	vk.GetDeviceQueue(device, 0, 0, &queue)
@@ -221,6 +227,8 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []fl
 	err = vk.Error(vk.QueueWaitIdle(queue))
 	handle(err)
 
+	end("Ran shader")
+
 	// Read Data Back
 	var data unsafe.Pointer
 	err = vk.Error(vk.MapMemory(device, outMem, 0, vk.DeviceSize(vk.WholeSize), 0, &data))
@@ -230,5 +238,13 @@ func runCompute(physicalDevice vk.PhysicalDevice, instance vk.Instance, dat []fl
 
 	vk.UnmapMemory(device, outMem)
 
-	fmt.Println(outData)
+	end("Read data back")
+
+	for i := range outData {
+		if dat[i]*dat[i] != outData[i] {
+			panic(fmt.Errorf("expected %f, got %f", dat[i]*dat[i], outData[i]))
+		}
+	}
+
+	end("Verified data")
 }
