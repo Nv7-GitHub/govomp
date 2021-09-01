@@ -6,6 +6,12 @@ import (
 	vk "github.com/vulkan-go/vulkan"
 )
 
+// Buffer represents data on the target device
+type Buffer interface {
+	getBuffer() vk.Buffer
+}
+
+// ArrayBuffer is a buffer containg an array of values
 type ArrayBuffer struct {
 	mem    *Memory
 	buf    vk.Buffer
@@ -19,8 +25,8 @@ type Memory struct {
 	Size   int
 }
 
-// AllocMemory allocates memory on the device
-func (d *Device) AllocMemory(size int) (*Memory, error) {
+// allocMemory allocates memory on the device
+func (d *Device) allocMemory(size int) (*Memory, error) {
 	memTypeIndex := uint32(vk.MaxMemoryTypes)
 
 	for i := uint32(0); i < d.memProperties.MemoryTypeCount; i++ {
@@ -91,12 +97,35 @@ func (m *Memory) WriteArray(data []float32) error {
 	return nil
 }
 
+// TODO: Use generics for the data, and support float32 and int32 as param, then create buffer with that size [waiting for go 1.18 release]
+// AllocateArrayBuffer allocates an array buffer with a length
+func (d *Device) AllocateArrayBuffer(length int) (*ArrayBuffer, error) {
+	var testsize float32 // Use T as type param instead
+	bufSize := length * int(unsafe.Sizeof(testsize))
+
+	mem, err := d.allocMemory(bufSize)
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := mem.GetVulkanBuffer()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ArrayBuffer{
+		mem:    mem,
+		device: d.device,
+		buf:    buf,
+	}, nil
+}
+
 // TODO: Use generics for the data, and support float32 and int32 arrays [waiting for go 1.18 release]
 // NewBuffer creates a buffer on the target device with the provided data
 func (d *Device) NewArrayBuffer(data []float32) (*ArrayBuffer, error) {
 	bufSize := len(data) * int(unsafe.Sizeof(data[0]))
 
-	mem, err := d.AllocMemory(bufSize)
+	mem, err := d.allocMemory(bufSize)
 	if err != nil {
 		return nil, err
 	}
@@ -139,4 +168,8 @@ func (m *Memory) ReadArray() ([]float32, error) {
 // Read reads the data from the buffer
 func (b *ArrayBuffer) Read() ([]float32, error) {
 	return b.mem.ReadArray()
+}
+
+func (b *ArrayBuffer) getBuffer() vk.Buffer {
+	return b.buf
 }

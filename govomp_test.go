@@ -23,17 +23,40 @@ func TestSquares(t *testing.T) {
 	dat := []float32{1, 2, 3}
 
 	for _, device := range devices {
+		fmt.Println(device.Name)
+
+		// Buffers
 		buf, err := device.NewArrayBuffer(dat)
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		out, err := device.AllocateArrayBuffer(len(dat))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		uniform, err := device.NewArrayBuffer([]float32{float32(len(dat))})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Create & Run Shader
 		shader, err := device.NewShader(shader)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		fmt.Println(device.Name, device.Type)
-		fmt.Println(buf.Read())
-		fmt.Println(shader)
+		err = device.RunShader(shader, len(dat), 1, uniform, buf, out)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Read output
+		outDat, err := out.Read()
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(outDat)
 	}
 }
