@@ -1,11 +1,13 @@
 package govomp
 
-// Remember to do -gcflags=-G=3!
-
 import (
+	_ "embed"
 	"fmt"
 	"testing"
 )
+
+//go:embed shader.spv
+var shader []byte
 
 func TestSquares(t *testing.T) {
 	err := Init()
@@ -25,8 +27,13 @@ func TestSquares(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		shader, err := device.NewShader(shader)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		fmt.Println(device.Name, device.Type)
 		fmt.Println(buf.Read())
+		fmt.Println(shader)
 	}
 }
